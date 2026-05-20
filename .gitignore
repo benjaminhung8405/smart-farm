@@ -1,0 +1,48 @@
+# ====================================================================
+# 1. HOME ASSISTANT CONFIGURATION
+# ====================================================================
+# Bỏ qua toàn bộ thư mục config của HA trước
+homeassistant/*
+
+# Giữ lại các file cấu hình khung (Cần thiết để tái sử dụng)
+!homeassistant/configuration.yaml
+!homeassistant/automations.yaml
+!homeassistant/scripts.yaml
+!homeassistant/scenes.yaml
+!homeassistant/custom_components/
+!homeassistant/secrets.yaml.example
+
+# BẮT BUỘC BỎ QUA: Dữ liệu chạy ngầm và Database của HA
+homeassistant/.storage/
+homeassistant/home-assistant_v2.db
+homeassistant/home-assistant_v2.db-shm
+homeassistant/home-assistant_v2.db-wal
+homeassistant/*.log
+
+# BẮT BUỘC BỎ QUA: File chứa mật khẩu/token bảo mật của HA
+homeassistant/secrets.yaml
+
+# ====================================================================
+# 2. MQTT (MOSQUITTO) CONFIGURATION
+# ====================================================================
+# Giữ lại file cấu hình chạy broker
+!mosquitto/config/mosquitto.conf
+
+# BẮT BUỘC BỎ QUA: Dữ liệu lịch sử và Log của MQTT
+mosquitto/data/
+mosquitto/log/
+
+# ====================================================================
+# 3. OS / IDE / SYSTEM
+# ====================================================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ====================================================================
+# 4. PYTHON / COMPILER
+# ====================================================================
+__pycache__/
+*.py[cod]
+*$py.class

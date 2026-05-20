@@ -1,0 +1,27 @@
+
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+mqtt_statestream:
+  base_topic: "farm/ha"
+  publish_attributes: false
+  publish_timestamps: true
+  include:
+    entities:
+      # --- Các chỉ số cốt lõi cho Thủy canh ---
+      - sensor.water_quality_ph_w218_ph                        # Độ pH (7.65)
+      - sensor.water_quality_ph_w218_electrical_conductivity   # Độ dẫn điện EC (736 μS/cm)
+      - sensor.water_quality_ph_w218_total_dissolved_solids    # Tổng chất rắn hòa tan TDS (368 ppm)
+      - sensor.water_quality_ph_w218_nhiet_do                  # Nhiệt độ nước (31.1 °C)
+      - sensor.water_quality_ph_w218_do_am                 # Độ ẩm môi trường
+      - sensor.water_quality_ph_w218_oxidation_reduction_potential # Độ chống oxy hóa ORP
+      - sensor.water_quality_ph_w218_salinity              # Độ mặn
+      - sensor.water_quality_ph_w218_conductivity_factor   # Hệ số dẫn điện CF
+      - sensor.water_quality_ph_w218_specific_gravity      # Trọng lượng riêng SG
