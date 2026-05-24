@@ -1,0 +1,177 @@
+#include <Arduino.h> // <-- CỰC KỲ QUAN TRỌNG: Thư viện lõi để biên dịch C++ trên Arduino
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+// ==========================================
+// 0. FORWARD DECLARATIONS (Khai báo mẫu hàm)
+// C++ chuẩn yêu cầu phải khai báo tên hàm trước khi hàm đó được gọi
+// ==========================================
+void setup_wifi();
+void callback(char* topic, byte* payload, unsigned int length);
+void reconnect();
+
+// ==========================================
+// 1. CẤU HÌNH HỆ THỐNG
+// ==========================================
+const char* ssid        = "FPT Telecom-Phihung";     // Thay bằng tên WiFi của farm
+const char* password    = "phihung2005"; // Thay bằng mật khẩu WiFi
+
+// IP của máy chạy Docker Mosquitto (lấy từ secrets.yaml hoặc MQTT Explorer)
+const char* mqtt_server = "192.168.1.165"; 
+const int mqtt_port     = 1883;
+
+// ==========================================
+// 2. KHỞI TẠO ĐỐI TƯỢNG
+// ==========================================
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+// Biến toàn cục lưu trữ đầy đủ 9 thông số từ bộ đo PH-W218
+float water_ph       = 0.0;
+float water_ec       = 0.0;
+float water_temp     = 0.0;
+float water_tds      = 0.0;
+float water_humidity = 0.0; // Độ ẩm môi trường
+float water_orp      = 0.0; // Độ chống oxy hóa ORP
+float water_salinity = 0.0; // Độ mặn
+float water_cf       = 0.0; // Hệ số dẫn điện CF
+float water_sg       = 0.0; // Tỷ trọng riêng SG
+
+// ==========================================
+// 3. HÀM KẾT NỐI WIFI
+// ==========================================
+void setup_wifi() {
+  delay(10);
+  Serial.println("\n------------------------------------");
+  Serial.printf("Kết nối vào mạng WiFi: %s\n", ssid);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\n➔ WiFi Connected!");
+  Serial.print("➔ ESP32 IP Address: ");
+  Serial.println(WiFi.localIP());
+}
+
+// ==========================================
+// 4. HÀM CALLBACK (Hứng và xử lý dữ liệu MQTT)
+// ==========================================
+void callback(char* topic, byte* payload, unsigned int length) {
+  // Chuyển đổi payload (mảng byte) thành chuỗi String để xử lý
+  String messageBuff = "";
+  for (unsigned int i = 0; i < length; i++) {
+    messageBuff += (char)payload[i];
+  }
+  
+  String topicStr = String(topic);
+  float value = messageBuff.toFloat(); // Ép chuỗi sang số float
+
+  Serial.printf("[MQTT RECV] Topic: %s | Raw: %s\n", topic, messageBuff.c_str());
+
+  // Kỹ thuật bóc tách Topic sử dụng endsWith để lọc dữ liệu từ PH-W218
+  // --- 4 CHỈ SỐ CỐT LÕI ---
+  if (topicStr.endsWith("water_quality_ph_w218_ph/state")) {
+    water_ph = value;
+    Serial.printf("   ✨ Cập nhật bộ nhớ ➔ pH: %.2f\n", water_ph);
+  } 
+  else if (topicStr.endsWith("water_quality_ph_w218_electrical_conductivity/state")) {
+    water_ec = value;
+    Serial.printf("   ✨ Cập nhật bộ nhớ ➔ EC: %.0f µS/cm\n", water_ec);
+  }
+  else if (topicStr.endsWith("water_quality_ph_w218_nhiet_do/state")) {
+    water_temp = value;
+    Serial.printf("   ✨ Cập nhật bộ nhớ ➔ Nhiệt độ: %.1f °C\n", water_temp);
+  }
+  else if (topicStr.endsWith("water_quality_ph_w218_total_dissolved_solids/state")) {
+    water_tds = value;
+    Serial.printf("   ✨ Cập nhật bộ nhớ ➔ TDS: %.0f ppm\n", water_tds);
+  }
+  // --- 5 CHỈ SỐ PHỤ TRỢ (Mở rộng cho cảm biến 8-in-1) ---
+  else if (topicStr.endsWith("water_quality_ph_w218_do_am/state")) {
+    water_humidity = value;
+    Serial.printf("   ✨ Cập nhật bộ nhớ ➔ Độ ẩm: %.1f %%\n", water_humidity);
+  }
+  else if (topicStr.endsWith("water_quality_ph_w218_oxidation_reduction_potential/state")) {
+    water_orp = value;
+    Serial.printf("   ✨ Cập nhật bộ nhớ ➔ ORP: %.0f mV\n", water_orp);
+  }
+  else if (topicStr.endsWith("water_quality_ph_w218_salinity/state")) {
+    water_salinity = value;
+    Serial.printf("   ✨ Cập nhật bộ nhớ ➔ Độ mặn: %.2f ppt\n", water_salinity);
+  }
+  else if (topicStr.endsWith("water_quality_ph_w218_conductivity_factor/state")) {
+    water_cf = value;
+    Serial.printf("   ✨ Cập nhật bộ nhớ ➔ CF: %.1f\n", water_cf);
+  }
+  else if (topicStr.endsWith("water_quality_ph_w218_specific_gravity/state")) {
+    water_sg = value;
+    Serial.printf("   ✨ Cập nhật bộ nhớ ➔ SG: %.3f\n", water_sg);
+  }
+  
+  Serial.println("------------------------------------");
+}
+
+// ==========================================
+// 5. HÀM KẾT NỐI / KẾT NỐI LẠI MQTT BROKER
+// ==========================================
+void reconnect() {
+  // Chạy vòng lặp cho đến khi kết nối lại được
+  while (!client.connected()) {
+    Serial.print("Đang kết nối MQTT Broker...");
+    
+    // Tạo Client ID ngẫu nhiên bằng MAC để tránh trùng lặp thiết bị trên Broker
+    String clientId = "ESP32-Hydroponics-";
+    clientId += String(random(0, 0xffff), HEX);
+    
+    if (client.connect(clientId.c_str())) {
+      Serial.println("Đã kết nối thành công!");
+      
+      // KỸ THUẬT PRO: Dùng Ký tự đại diện Wildcard (+) để subscribe 
+      // Nhận toàn bộ trạng thái của cụm cảm biến PH-W218 chỉ bằng 1 dòng lệnh
+      client.subscribe("farm/ha/sensor/+/state");
+      Serial.println("➔ Đã subscribe thành công topic: farm/ha/sensor/+/state");
+    } else {
+      Serial.print("Lỗi kết nối, rc=");
+      Serial.print(client.state());
+      Serial.println(" -> Thử lại sau 5 giây");
+      delay(5000);
+    }
+  }
+}
+
+// ==========================================
+// 6. SETUP & LOOP
+// ==========================================
+void setup() {
+  Serial.begin(115200);
+
+  // Chờ tối đa 4 giây để Mac nhận diện cổng USB CDC, nếu không có Mac cắm vào thì tự chạy tiếp
+  uint32_t timeout = millis();
+  while (!Serial && (millis() - timeout < 4000)) {
+    delay(10);
+  }
+
+  setup_wifi();
+  
+  client.setServer(mqtt_server, mqtt_port);
+  client.setCallback(callback); // Chỉ định hàm xử lý gói tin nhận về
+}
+
+void loop() {
+  // Đảm bảo duy trì kết nối MQTT luôn sống
+  if (!client.connected()) {
+    reconnect();
+  }
+  client.loop(); // Giữ cho luồng nhận thông điệp hoạt động liên tục không nghẽn
+
+  // Heartbeat print every 3 seconds to verify the board is running!
+  static uint32_t lastPrint = 0;
+  if (millis() - lastPrint > 3000) {
+    lastPrint = millis();
+    Serial.println("➔ [HEARTBEAT] ESP32-S3 is running stably...");
+  }
+}

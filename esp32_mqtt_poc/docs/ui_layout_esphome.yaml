@@ -1,0 +1,217 @@
+# ESPHome LVGL YAML Configuration for Smart Farm Hydroponics Dashboard (320x240 TFT)
+# Bố cục 2x2 Dashboard cao cấp phối màu Obsidian Dark & Glassmorphism
+
+lvgl:
+  pages:
+    - id: canvas_1
+      bg_color: 0x0D1117
+      pad_all: 0
+      widgets:
+        # --- HEADER BAR ---
+        - object:
+            id: lv_header
+            x: 0
+            y: 0
+            width: 320
+            height: 26
+            bg_color: 0x0A0D14
+            border_width: 1
+            border_color: 0x21262D
+            radius: 0
+            widgets:
+              - label:
+                  id: lbl_title
+                  x: 10
+                  y: 5
+                  width: 100
+                  height: 16
+                  text: "SMART H2O"
+                  text_color: 0x8B949E
+              - led:
+                  id: led_mqtt
+                  x: 210
+                  y: 8
+                  width: 8
+                  height: 8
+                  color: 0x00FF87
+                  bg_color: 0x00FF87
+              - label:
+                  id: lbl_mqtt
+                  x: 225
+                  y: 5
+                  width: 40
+                  height: 16
+                  text: "MQTT"
+                  text_color: 0x8B949E
+              - label:
+                  id: lbl_time
+                  x: 275
+                  y: 5
+                  width: 40
+                  height: 16
+                  text: "23:10"
+                  text_color: 0xFFFFFF
+
+        # --- PH CARD ---
+        - object:
+            id: lv_card_ph
+            x: 8
+            y: 34
+            width: 148
+            height: 94
+            bg_color: 0x161B22
+            radius: 12
+            border_width: 1
+            border_color: 0x00F2FE
+            widgets:
+              - label:
+                  id: lbl_ph_title
+                  x: 8
+                  y: 6
+                  width: 40
+                  height: 16
+                  text: "pH"
+                  text_color: 0x8B949E
+              - led:
+                  id: led_ph_status
+                  x: 130
+                  y: 8
+                  width: 8
+                  height: 8
+                  color: 0x00FF87
+                  bg_color: 0x00FF87
+              - label:
+                  id: lbl_ph_val
+                  x: 10
+                  y: 26
+                  width: 128
+                  height: 38
+                  text: "6.25"
+                  text_color: 0xFFFFFF
+              - label:
+                  id: lbl_ph_unit
+                  x: 44
+                  y: 70
+                  width: 60
+                  height: 16
+                  text: "pH Unit"
+                  text_color: 0x00F2FE
+
+        # --- EC CARD ---
+        - object:
+            id: lv_card_ec
+            x: 164
+            y: 34
+            width: 148
+            height: 94
+            bg_color: 0x161B22
+            radius: 12
+            border_width: 1
+            border_color: 0x00D2FF
+            widgets:
+              - label:
+                  id: lbl_ec_title
+                  x: 8
+                  y: 6
+                  width: 80
+                  height: 16
+                  text: "EC (uS/cm)"
+                  text_color: 0x8B949E
+              - led:
+                  id: led_ec_status
+                  x: 130
+                  y: 8
+                  width: 8
+                  height: 8
+                  color: 0xFF9F43
+                  bg_color: 0xFF9F43
+              - label:
+                  id: lbl_ec_val
+                  x: 20
+                  y: 26
+                  width: 108
+                  height: 38
+                  text: "1850"
+                  text_color: 0xFFFFFF
+              - label:
+                  id: lbl_ec_unit
+                  x: 52
+                  y: 70
+                  width: 60
+                  height: 16
+                  text: "uS/cm"
+                  text_color: 0x00D2FF
+
+        # --- TEMPERATURE CARD ---
+        - object:
+            id: lv_card_temp
+            x: 8
+            y: 136
+            width: 148
+            height: 94
+            bg_color: 0x161B22
+            radius: 12
+            border_width: 1
+            border_color: 0xFF9F43
+            widgets:
+              - label:
+                  id: lbl_temp_title
+                  x: 8
+                  y: 6
+                  width: 80
+                  height: 16
+                  text: "Temperature"
+                  text_color: 0x8B949E
+              - label:
+                  id: lbl_temp_val
+                  x: 22
+                  y: 26
+                  width: 108
+                  height: 38
+                  text: "26.5"
+                  text_color: 0xFFFFFF
+              - label:
+                  id: lbl_temp_unit
+                  x: 64
+                  y: 70
+                  width: 40
+                  height: 16
+                  text: "°C"
+                  text_color: 0xFF9F43
+
+        # --- TDS CARD ---
+        - object:
+            id: lv_card_tds
+            x: 164
+            y: 136
+            width: 148
+            height: 94
+            bg_color: 0x161B22
+            radius: 12
+            border_width: 1
+            border_color: 0x00FF87
+            widgets:
+              - label:
+                  id: lbl_tds_title
+                  x: 8
+                  y: 6
+                  width: 40
+                  height: 16
+                  text: "TDS"
+                  text_color: 0x8B949E
+              - label:
+                  id: lbl_tds_val
+                  x: 32
+                  y: 26
+                  width: 108
+                  height: 38
+                  text: "925"
+                  text_color: 0xFFFFFF
+              - label:
+                  id: lbl_tds_unit
+                  x: 58
+                  y: 70
+                  width: 40
+                  height: 16
+                  text: "ppm"
+                  text_color: 0x00FF87
