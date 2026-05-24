@@ -1,0 +1,81 @@
+title: Smart Farm
+views:
+  - title: Giám Sát Nước
+    path: water_monitor
+    icon: mdi:water-analyzer
+    type: sections
+    sections:
+      - title: 📊 CHỈ SỐ CỐT LÕI
+        cards:
+          - type: gauge
+            entity: sensor.water_quality_ph_w218_ph
+            name: Độ pH Dung Dịch
+            min: 0
+            max: 14
+            needle: true
+            segments:
+              - from: 0
+                color: '#ef4444'    # Crimson (Nguy hiểm)
+              - from: 5.0
+                color: '#f59e0b'  # Amber (Cảnh báo cận dưới)
+              - from: 5.5
+                color: '#10b981'  # Emerald (Lý tưởng)
+              - from: 6.5
+                color: '#f59e0b'  # Amber (Cảnh báo cận trên)
+              - from: 7.5
+                color: '#ef4444'  # Crimson (Nguy hiểm)
+          - type: gauge
+            entity: sensor.water_quality_ph_w218_electrical_conductivity
+            name: Dinh Dưỡng EC
+            min: 0
+            max: 3000
+            needle: true
+            segments:
+              - from: 0
+                color: '#f59e0b'    # Amber (Thiếu chất)
+              - from: 800
+                color: '#10b981'  # Emerald (Tối ưu)
+              - from: 1800
+                color: '#ef4444' # Crimson (Ngộ độc rễ)
+
+      - title: 🧪 THÔNG SỐ PHỤ TRỢ
+        cards:
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: tile
+                entity: sensor.water_quality_ph_w218_nhiet_do
+                name: Nhiệt Độ Nước
+                icon: mdi:water-thermometer
+                color: light-blue
+              - type: tile
+                entity: sensor.water_quality_ph_w218_total_dissolved_solids
+                name: Chỉ số TDS
+                icon: mdi:water-opacity
+                color: teal
+              - type: tile
+                entity: sensor.water_quality_ph_w218_oxidation_reduction_potential
+                name: Chỉ số ORP
+                icon: mdi:virus-off
+                color: deep-purple
+              - type: tile
+                entity: sensor.water_quality_ph_w218_salinity
+                name: Độ Mặn (Salinity)
+                icon: mdi:shaker
+                color: blue-grey
+
+      - title: 📈 ANALYTICS & TRENDS
+        cards:
+          - type: history-graph
+            entities:
+              - entity: sensor.water_quality_ph_w218_ph
+              - entity: sensor.water_quality_ph_w218_total_dissolved_solids
+            title: Tương Quan pH / TDS (24h)
+            hours_to_show: 24
+          - type: history-graph
+            entities:
+              - entity: sensor.water_quality_ph_w218_electrical_conductivity
+              - entity: sensor.water_quality_ph_w218_nhiet_do
+            title: Biến Thiên EC Theo Nhiệt Độ
+            hours_to_show: 24
