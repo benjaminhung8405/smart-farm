@@ -14,10 +14,17 @@ static lv_obj_t *label_tds_val;
 
 static lv_obj_t *led_ph_status;
 static lv_obj_t *led_ec_status;
+static lv_obj_t *led_temp_status;
 
 static lv_obj_t *label_mqtt_status;
 static lv_obj_t *led_mqtt;
 static lv_obj_t *label_time;
+
+// Các đối tượng Thẻ (Cards) để thay đổi Style động
+static lv_obj_t *card_ph;
+static lv_obj_t *card_ec;
+static lv_obj_t *card_temp;
+static lv_obj_t *card_tds;
 
 // Style cho các thẻ (Cards)
 static lv_style_t style_card;
@@ -134,19 +141,19 @@ void gui_init(void)
 
     // Tạo 4 thẻ dữ liệu chính
     // Ô [0,0]: pH (Cyan-blue)
-    lv_obj_t *card_ph = create_metric_card(grid_container, "pH", "pH Unit", lv_color_hex(0x00F2FE), &label_ph_val, &led_ph_status);
+    card_ph = create_metric_card(grid_container, "pH", "pH Unit", lv_color_hex(0x00F2FE), &label_ph_val, &led_ph_status);
     lv_obj_set_grid_cell(card_ph, LV_GRID_ALIGN_STRETCH, 0, 1, LV_GRID_ALIGN_STRETCH, 0, 1);
 
     // Ô [1,0]: EC (Electric Cyan)
-    lv_obj_t *card_ec = create_metric_card(grid_container, "EC (uS/cm)", "uS/cm", lv_color_hex(0x00D2FF), &label_ec_val, &led_ec_status);
+    card_ec = create_metric_card(grid_container, "EC (uS/cm)", "uS/cm", lv_color_hex(0x00D2FF), &label_ec_val, &led_ec_status);
     lv_obj_set_grid_cell(card_ec, LV_GRID_ALIGN_STRETCH, 1, 1, LV_GRID_ALIGN_STRETCH, 0, 1);
 
     // Ô [0,1]: Nhiệt độ (Neon Orange)
-    lv_obj_t *card_temp = create_metric_card(grid_container, "Temperature", "°C", lv_color_hex(0xFF9F43), &label_temp_val, NULL);
+    card_temp = create_metric_card(grid_container, "Temperature", "°C", lv_color_hex(0xFF9F43), &label_temp_val, &led_temp_status);
     lv_obj_set_grid_cell(card_temp, LV_GRID_ALIGN_STRETCH, 0, 1, LV_GRID_ALIGN_STRETCH, 1, 1);
 
     // Ô [1,1]: TDS (Emerald Green)
-    lv_obj_t *card_tds = create_metric_card(grid_container, "TDS", "ppm", lv_color_hex(0x00FF87), &label_tds_val, NULL);
+    card_tds = create_metric_card(grid_container, "TDS", "ppm", lv_color_hex(0x00FF87), &label_tds_val, NULL);
     lv_obj_set_grid_cell(card_tds, LV_GRID_ALIGN_STRETCH, 1, 1, LV_GRID_ALIGN_STRETCH, 1, 1);
 }
 
@@ -170,18 +177,27 @@ void gui_handler(void)
         snprintf(buf, sizeof(buf), "%.2f", current_ui_state.ph);
         lv_label_set_text(label_ph_val, buf);
 
-        // Điều khiển màu đèn LED pH dựa theo ngưỡng sinh học thủy canh (Chuẩn 5.5 - 6.5)
+        // Điều khiển màu viền và đèn LED pH dựa theo ngưỡng sinh học thủy canh thương mại
         if (current_ui_state.ph >= 5.5f && current_ui_state.ph <= 6.5f)
         {
+            // Lý tưởng (Lớp viền Cyan nguyên bản, mỏng tinh tế)
             lv_led_set_color(led_ph_status, lv_color_hex(0x00FF87)); // Xanh lá: Lý tưởng
+            lv_obj_set_style_border_color(card_ph, lv_color_hex(0x00F2FE), 0);
+            lv_obj_set_style_border_width(card_ph, 1, 0);
         }
-        else if ((current_ui_state.ph >= 5.0f && current_ui_state.ph < 5.5f) || (current_ui_state.ph > 6.5f && current_ui_state.ph <= 7.0f))
+        else if (current_ui_state.ph >= 5.0f && current_ui_state.ph <= 7.5f)
         {
+            // Cảnh báo nhẹ (Viền màu cam, giữ nguyên độ dày mỏng)
             lv_led_set_color(led_ph_status, lv_color_hex(0xFF9F43)); // Cam: Hơi lệch
+            lv_obj_set_style_border_color(card_ph, lv_color_hex(0xFF9F43), 0);
+            lv_obj_set_style_border_width(card_ph, 1, 0);
         }
         else
         {
+            // NGUY HIỂM / LỖI NẶNG (Viền đỏ dày 2px cực kỳ nổi bật từ xa 5m)
             lv_led_set_color(led_ph_status, lv_color_hex(0xFF4949)); // Đỏ: Nguy hiểm!
+            lv_obj_set_style_border_color(card_ph, lv_color_hex(0xFF4949), 0);
+            lv_obj_set_style_border_width(card_ph, 2, 0);
         }
         displayed_ui_state.ph = current_ui_state.ph;
     }
@@ -211,6 +227,29 @@ void gui_handler(void)
         char buf[8];
         snprintf(buf, sizeof(buf), "%.1f", current_ui_state.temp);
         lv_label_set_text(label_temp_val, buf);
+
+        // Điều khiển màu viền và đèn LED Nhiệt độ (ngưỡng lý tưởng là dưới 28.0°C)
+        if (current_ui_state.temp < 28.0f)
+        {
+            // An toàn / Lý tưởng (Viền Neon Orange nguyên bản)
+            lv_led_set_color(led_temp_status, lv_color_hex(0x00FF87)); // Xanh lá: An toàn
+            lv_obj_set_style_border_color(card_temp, lv_color_hex(0xFF9F43), 0);
+            lv_obj_set_style_border_width(card_temp, 1, 0);
+        }
+        else if (current_ui_state.temp >= 28.0f && current_ui_state.temp < 32.0f)
+        {
+            // Cảnh báo ấm (Viền màu cam đậm, giữ nguyên độ dày mỏng)
+            lv_led_set_color(led_temp_status, lv_color_hex(0xFF9F43)); // Cam: Nhiệt độ cao
+            lv_obj_set_style_border_color(card_temp, lv_color_hex(0xFF9F43), 0);
+            lv_obj_set_style_border_width(card_temp, 1, 0);
+        }
+        else
+        {
+            // NGUY HIỂM / QUÁ NÓNG (Rất dễ thối rễ, viền Đỏ dày 2px cực kỳ nổi bật)
+            lv_led_set_color(led_temp_status, lv_color_hex(0xFF4949)); // Đỏ: Quá nhiệt, thối rễ!
+            lv_obj_set_style_border_color(card_temp, lv_color_hex(0xFF4949), 0);
+            lv_obj_set_style_border_width(card_temp, 2, 0);
+        }
         displayed_ui_state.temp = current_ui_state.temp;
     }
 
@@ -237,5 +276,13 @@ void gui_handler(void)
             lv_label_set_text(label_mqtt_status, "MQTT ERR");
         }
         displayed_ui_state.mqtt_connected = current_ui_state.mqtt_connected;
+    }
+
+    // 6. Cập nhật thời gian thực trên Header
+    static char disp_time_buf[16] = "";
+    if (current_ui_state.time_str && strcmp(current_ui_state.time_str, disp_time_buf) != 0)
+    {
+        lv_label_set_text(label_time, current_ui_state.time_str);
+        strncpy(disp_time_buf, current_ui_state.time_str, sizeof(disp_time_buf) - 1);
     }
 }

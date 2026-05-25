@@ -4,6 +4,7 @@
 #include <TFT_eSPI.h>
 #include <lvgl.h>
 #include <esp_heap_caps.h>
+#include <time.h>
 #include "gui.h"
 
 // ==========================================
@@ -14,7 +15,7 @@ void callback(char *topic, byte *payload, unsigned int length);
 void reconnect();
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p);
 void update_ui_state();
-bool touch_read(lv_indev_drv_t *indev, lv_indev_data_t *data);
+void touch_read(lv_indev_drv_t *indev, lv_indev_data_t *data);
 
 // ==========================================
 // 1. CẤU HÌNH HỆ THỐNG
@@ -106,6 +107,19 @@ void callback(char *topic, byte *payload, unsigned int length)
 
 void update_ui_state()
 {
+    time_t now = time(nullptr);
+    struct tm timeinfo;
+    static char time_buffer[10] = "--:--";
+    
+    if (localtime_r(&now, &timeinfo) && timeinfo.tm_year > 70)
+    {
+        strftime(time_buffer, sizeof(time_buffer), "%H:%M", &timeinfo);
+    }
+    else
+    {
+        strcpy(time_buffer, "--:--");
+    }
+
     UIState new_state;
     new_state.ph = water_ph;
     new_state.ec = water_ec;
@@ -113,7 +127,7 @@ void update_ui_state()
     new_state.tds = water_tds;
     new_state.wifi_connected = (WiFi.status() == WL_CONNECTED);
     new_state.mqtt_connected = client.connected();
-    new_state.time_str = "";
+    new_state.time_str = time_buffer;
     gui_update_data(new_state);
 }
 
@@ -161,7 +175,7 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
     lv_disp_flush_ready(disp);
 }
 
-bool touch_read(lv_indev_drv_t *indev, lv_indev_data_t *data)
+void touch_read(lv_indev_drv_t *indev, lv_indev_data_t *data)
 {
     LV_UNUSED(indev);
 
@@ -179,8 +193,6 @@ bool touch_read(lv_indev_drv_t *indev, lv_indev_data_t *data)
     {
         data->state = LV_INDEV_STATE_REL;
     }
-
-    return false;
 }
 
 // ==========================================
@@ -197,6 +209,9 @@ void setup()
     }
 
     setup_wifi();
+
+    // Cấu hình giờ Việt Nam thời gian thực qua NTP (GMT+7: 7 * 3600 = 25200 giây)
+    configTime(25200, 0, "pool.ntp.org", "time.nist.gov");
 
     client.setServer(mqtt_server, mqtt_port);
     client.setCallback(callback);
@@ -291,6 +306,14 @@ void loop()
     if (mqtt_connected != last_mqtt_connected)
     {
         last_mqtt_connected = mqtt_connected;
+        update_ui_state();
+    }
+
+    // Cập nhật thời gian thực lên giao diện định kỳ (mỗi 15 giây)
+    static uint32_t last_time_update = 0;
+    if (now - last_time_update >= 15000)
+    {
+        last_time_update = now;
         update_ui_state();
     }
 
